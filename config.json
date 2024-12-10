@@ -10,7 +10,7 @@
 				"train": {
 					"epochs": 1000,
 					"min_epochs": 10,
-					"batch_size": 32,
+					"batch_size": 16,
 					"patience": 15,
 					"reduce_lr": 5,
 					"warmup_lr": 5,
