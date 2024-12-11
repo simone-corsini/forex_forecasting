@@ -1,6 +1,6 @@
 [
 	{
-		"dataset": "data/eurusd_m5_splitted_ma14_ws256.h5",
+		"dataset": "data/eurusd_m5_splitted_ma14_ws256_set1.h5",
 		"n_classes": 3,
 		"models": [
 			{
@@ -10,7 +10,7 @@
 				"train": {
 					"epochs": 1000,
 					"min_epochs": 10,
-					"batch_size": 16,
+					"batch_size": 2048,
 					"patience": 15,
 					"reduce_lr": 5,
 					"warmup_lr": 5,
