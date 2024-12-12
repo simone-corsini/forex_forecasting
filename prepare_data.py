@@ -52,48 +52,50 @@ def add_to_dataset(output_file, X, y):
 
         return f['X'].shape[0], f['y'].shape[0]
     
-def split_and_normalize_data(output_file, output_scaler_file, X_all, y_all, train_size):
-    split_point = int(len(X_all) * train_size)
-    X_train = X_all[:split_point]
-    y_train = y_all[:split_point]
-    X_val = X_all[split_point:]
-    y_val = y_all[split_point:]
+def split_and_normalize_data(output_file, output_scaler_file, train_size):
+    with h5py.File(output_file, 'a') as f:
+        X_all = f['X'][:]
+        y_all = f['y'][:]
+        split_point = int(len(X_all) * train_size)
+        X_train = X_all[:split_point]
+        y_train = y_all[:split_point]
+        X_val = X_all[split_point:]
+        y_val = y_all[split_point:]
 
-    normalize_max = 0.95
-    normalize_min = 0.05
-    min_X_values = np.min(X_train, axis=(0, 1)).astype(np.float32)
-    max_X_values = np.max(X_train, axis=(0, 1)).astype(np.float32)
-    min_y_values = np.min(y_train, axis=(0)).astype(np.float32)
-    max_y_values = np.max(y_train, axis=(0)).astype(np.float32)
+        normalize_max = 0.95
+        normalize_min = 0.05
+        min_X_values = np.min(X_train, axis=(0, 1)).astype(np.float32)
+        max_X_values = np.max(X_train, axis=(0, 1)).astype(np.float32)
+        min_y_values = np.min(y_train, axis=(0)).astype(np.float32)
+        max_y_values = np.max(y_train, axis=(0)).astype(np.float32)
 
-    print(f"[green]Min X values: {min_X_values}")
-    print(f"[green]Max X values: {max_X_values}")
-    print(f"[green]Min y values: {min_y_values}")
-    print(f"[green]Max y values: {max_y_values}")
-    
-    data = {
-        'min_X_values': min_X_values,
-        'max_X_values': max_X_values,
-        'min_y_values': min_y_values,
-        'max_y_values': max_y_values,
-        'normalize_min': normalize_min,
-        'normalize_max': normalize_max
-    }
+        print(f"[green]Min X values: {min_X_values}")
+        print(f"[green]Max X values: {max_X_values}")
+        print(f"[green]Min y values: {min_y_values}")
+        print(f"[green]Max y values: {max_y_values}")
+        
+        data = {
+            'min_X_values': min_X_values,
+            'max_X_values': max_X_values,
+            'min_y_values': min_y_values,
+            'max_y_values': max_y_values,
+            'normalize_min': normalize_min,
+            'normalize_max': normalize_max
+        }
 
-    with open(output_scaler_file, 'w') as file_scaler:
-        json.dump(data, file_scaler, indent=4, default=default_serializer)
+        with open(output_scaler_file, 'w') as file_scaler:
+            json.dump(data, file_scaler, indent=4, default=default_serializer)
 
-    X_train = (X_train - min_X_values) / (max_X_values - min_X_values) * (normalize_max - normalize_min) + normalize_min
-    y_train = (y_train - min_y_values) / (max_y_values - min_y_values) * (normalize_max - normalize_min) + normalize_min
-    X_val = (X_val - min_X_values) / (max_X_values - min_X_values) * (normalize_max - normalize_min) + normalize_min
-    y_val = (y_val - min_y_values) / (max_y_values - min_y_values) * (normalize_max - normalize_min) + normalize_min
+        X_train = (X_train - min_X_values) / (max_X_values - min_X_values) * (normalize_max - normalize_min) + normalize_min
+        y_train = (y_train - min_y_values) / (max_y_values - min_y_values) * (normalize_max - normalize_min) + normalize_min
+        X_val = (X_val - min_X_values) / (max_X_values - min_X_values) * (normalize_max - normalize_min) + normalize_min
+        y_val = (y_val - min_y_values) / (max_y_values - min_y_values) * (normalize_max - normalize_min) + normalize_min
 
-    X_train = X_train.astype(np.float32)
-    y_train = y_train.astype(np.float32)
-    X_val = X_val.astype(np.float32)
-    y_val = y_val.astype(np.float32)
+        X_train = X_train.astype(np.float32)
+        y_train = y_train.astype(np.float32)
+        X_val = X_val.astype(np.float32)
+        y_val = y_val.astype(np.float32)
 
-    with h5py.File(output_file, 'w') as f:
         # Crea i dataset
         f.create_dataset('X_train', data=X_train, dtype='float32', compression='gzip', compression_opts=9)
         f.create_dataset('y_train', data=y_train, dtype='float32', compression='gzip', compression_opts=9)
@@ -106,6 +108,9 @@ def split_and_normalize_data(output_file, output_scaler_file, X_all, y_all, trai
         f['X_train'].attrs['max_y'] = max_y_values
         f['X_train'].attrs['normalize_min'] = normalize_min
         f['X_train'].attrs['normalize_max'] = normalize_max
+
+        del f['X']
+        del f['y']
 
         print(f"[green]X Train size: {f["X_train"].shape}")
         print(f"[green]y Train size: {f["y_train"].shape}")
@@ -152,20 +157,6 @@ def prepare_indicator_set1(dataset):
     del dataset['deviation_lower']
     columns += ['bollinger_width_diff_rel', 'deviation_upper_diff_rel', 'deviation_lower_diff_rel']
 
-    # del dataset['bolinger_ma']
-    # del dataset['bolinger_std']
-    # del dataset['bolinger_upper']
-    # del dataset['bolinger_lower']
-
-    # dataset['log_hl_diff'] = np.log((dataset['hl_diff'] + epsilon) / (dataset['hl_diff'].shift(1) + epsilon))
-    # dataset['log_ema_fast_slow'] = np.log((dataset['ema_fast_slow'] + epsilon) / (dataset['ema_fast_slow'].shift(1) + epsilon))
-    # dataset['log_bu_distance'] = np.log((dataset['bu_distance'] + epsilon) / (dataset['bu_distance'].shift(1) + epsilon))
-    # dataset['log_bl_distance'] = np.log((dataset['bl_distance'] + epsilon) / (dataset['bl_distance'].shift(1) + epsilon))
-    # del dataset['hl_diff']
-    # del dataset['ema_fast_slow']
-    # del dataset['bu_distance']
-    # del dataset['bl_distance']
-
     return dataset, columns, max(ema_slow_period, ema_fast_period, bollinger_period)
 
 if __name__ == '__main__':
@@ -198,7 +189,7 @@ if __name__ == '__main__':
 
     x_shape, y_shape = 0, 0
 
-    X_all, y_all = None, None
+    # X_all, y_all = None, None
 
     with Progress() as progress:
         with zipfile.ZipFile(args.input_file, 'r') as origin:
@@ -235,29 +226,28 @@ if __name__ == '__main__':
 
                     X, y = get_data(dataset[columns + ['log_returns']].values, dataset['log_returns'].values, args.window_size)
 
-                    if X_all is None:
-                        X_all = X
-                        y_all = y
-                    else:
-                        X_all = np.append(X_all, X, axis=0)
-                        y_all = np.append(y_all, y, axis=0)
+                    # if X_all is None:
+                    #     X_all = X
+                    #     y_all = y
+                    # else:
+                    #     X_all = np.append(X_all, X, axis=0)
+                    #     y_all = np.append(y_all, y, axis=0)
 
-                    x_shape = X_all.shape[0]
-                    y_shape = y_all.shape[0]
+                    # x_shape = X_all.shape[0]
+                    # y_shape = y_all.shape[0]
 
-                    # x_shape, y_shape = add_to_dataset(output_file, X, y)
+                    x_shape, y_shape = add_to_dataset(output_file, X, y)
                     progress.update(task, advance=1)
             
             progress.update(task, completed=True)
             progress.remove_task(task)
 
-        if (np.isnan(X_all).any() or np.isnan(y_all).any()):
-            print("[red]Nan values found")
-            exit(1)
-        
+        # if (np.isnan(X_all).any() or np.isnan(y_all).any()):
+        #     print("[red]Nan values found")
+        #     exit(1)
 
         task = progress.add_task("[green]Split train/val and normailze[/green]", total=None)
-        split_and_normalize_data(output_file, output_scaler_file, X_all, y_all, 0.8)
+        split_and_normalize_data(output_file, output_scaler_file, 0.8)
         progress.update(task, completed=True)
         progress.remove_task(task)
 
