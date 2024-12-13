@@ -10,7 +10,7 @@
 					"num_layers": 1
 				},
 				"train": {
-					"epochs": 1,
+					"epochs": 1000,
 					"min_epochs": 10,
 					"batch_size": 2048,
 					"patience": 15,
@@ -29,7 +29,7 @@
 					"num_layers": 1
 				},
 				"train": {
-					"epochs": 1,
+					"epochs": 1000,
 					"min_epochs": 10,
 					"batch_size": 2048,
 					"patience": 15,
@@ -48,7 +48,7 @@
 					"num_layers": 2
 				},
 				"train": {
-					"epochs": 1,
+					"epochs": 1000,
 					"min_epochs": 10,
 					"batch_size": 2048,
 					"patience": 15,
@@ -67,7 +67,7 @@
 					"num_layers": 2
 				},
 				"train": {
-					"epochs": 1,
+					"epochs": 1000,
 					"min_epochs": 10,
 					"batch_size": 2048,
 					"patience": 15,
@@ -92,7 +92,7 @@
 					"output_len": 3
 				},
 				"train": {
-					"epochs": 1,
+					"epochs": 1000,
 					"min_epochs": 10,
 					"batch_size": 2048,
 					"patience": 15,
@@ -112,7 +112,7 @@
 					"output_len": 3
 				},
 				"train": {
-					"epochs": 1,
+					"epochs": 1000,
 					"min_epochs": 10,
 					"batch_size": 2048,
 					"patience": 15,
@@ -132,7 +132,7 @@
 					"output_len": 3
 				},
 				"train": {
-					"epochs": 1,
+					"epochs": 1000,
 					"min_epochs": 10,
 					"batch_size": 2048,
 					"patience": 15,
@@ -152,7 +152,7 @@
 					"output_len": 3
 				},
 				"train": {
-					"epochs": 1,
+					"epochs": 1000,
 					"min_epochs": 10,
 					"batch_size": 2048,
 					"patience": 15,
@@ -177,7 +177,7 @@
 					"output_len": 6
 				},
 				"train": {
-					"epochs": 1,
+					"epochs": 1000,
 					"min_epochs": 10,
 					"batch_size": 2048,
 					"patience": 15,
@@ -197,7 +197,7 @@
 					"output_len": 6
 				},
 				"train": {
-					"epochs": 1,
+					"epochs": 1000,
 					"min_epochs": 10,
 					"batch_size": 2048,
 					"patience": 15,
@@ -217,7 +217,7 @@
 					"output_len": 6
 				},
 				"train": {
-					"epochs": 1,
+					"epochs": 1000,
 					"min_epochs": 10,
 					"batch_size": 2048,
 					"patience": 15,
@@ -237,7 +237,7 @@
 					"output_len": 6
 				},
 				"train": {
-					"epochs": 1,
+					"epochs": 1000,
 					"min_epochs": 10,
 					"batch_size": 2048,
 					"patience": 15,
