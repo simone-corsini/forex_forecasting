@@ -11,6 +11,8 @@ from rich.progress import Progress
 from rich import print
 from pathlib import Path
 
+from sets.prepare_sets import prepare_indicator_sets
+
 epsilon = 1e-10
 
 
@@ -117,48 +119,6 @@ def split_and_normalize_data(output_file, output_scaler_file, train_size):
         print(f"[green]X Val size: {f["X_val"].shape}")
         print(f"[green]y Val size: {f["y_val"].shape}")
 
-def prepare_indicator_set1(dataset):
-    ema_slow_period = 9
-    ema_fast_period = 21
-    bollinger_period = 20
-    bolinger_deviation = 2
-
-    columns = []
-    dataset['ema_slow'] = dataset['hl_avg'].ewm(span=ema_slow_period, adjust=False).mean()
-    dataset['ema_fast'] = dataset['hl_avg'].ewm(span=ema_fast_period, adjust=False).mean()
-    dataset['ema_fast_slow'] = dataset['ema_fast'] - dataset['ema_slow']
-    dataset['ema_fast_slow_diff_rel'] = dataset['ema_fast_slow'].diff()
-    del dataset['ema_slow']
-    del dataset['ema_fast']
-    del dataset['ema_fast_slow']
-    columns += ['ema_fast_slow_diff_rel']
-
-    dataset['hl_diff'] = dataset['high'] - dataset['low']
-    dataset['hl_diff_diff_rel'] = dataset['hl_diff'].diff()
-    del dataset['hl_diff']
-    columns += ['hl_diff_diff_rel']
-
-    dataset['bollinger_ma'] = dataset['ma'].rolling(window=bollinger_period).mean()
-    dataset['bollinger_std'] = dataset['ma'].rolling(window=bollinger_period).std()
-    dataset['bollinger_upper'] = dataset['bollinger_ma'] + bolinger_deviation * dataset['bollinger_std']
-    dataset['bollinger_lower'] = dataset['bollinger_ma'] - bolinger_deviation * dataset['bollinger_std']
-    dataset['bollinger_width'] = dataset['bollinger_upper'] - dataset['bollinger_lower']
-    dataset['deviation_upper'] = (dataset['ma'] - dataset['bollinger_upper']) / dataset['bollinger_width']
-    dataset['deviation_lower'] = (dataset['ma'] - dataset['bollinger_lower']) / dataset['bollinger_width']
-    dataset['bollinger_width_diff_rel'] = dataset['bollinger_width'].diff()
-    dataset['deviation_upper_diff_rel'] = dataset['deviation_upper'].diff()
-    dataset['deviation_lower_diff_rel'] = dataset['deviation_lower'].diff()
-    del dataset['bollinger_ma']
-    del dataset['bollinger_std']
-    del dataset['bollinger_upper']
-    del dataset['bollinger_lower']
-    del dataset['bollinger_width']
-    del dataset['deviation_upper']
-    del dataset['deviation_lower']
-    columns += ['bollinger_width_diff_rel', 'deviation_upper_diff_rel', 'deviation_lower_diff_rel']
-
-    return dataset, columns, max(ema_slow_period, ema_fast_period, bollinger_period)
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Processa un file di input per generare un file HDF5.")
     parser.add_argument(
@@ -166,9 +126,11 @@ if __name__ == '__main__':
         type=str,
         help="Il percorso del file di input"
     )
+    parser.add_argument('--set_name', type=str, help="Nome del set di features da utilizzare", default='set1')
     parser.add_argument('--output_folder', type=str, help="Cartella di output")
     parser.add_argument('--ma_periods', type=int, default=14, help="Numero di periodi per la media mobile dei Log Returns")
     parser.add_argument('--window_size', type=int, default=256, help="Dimensione della finestra di osservazione")
+    parser.add_argument('--future_size', type=int, default=1, help="Dimensione della finestra di osservazione")
     args = parser.parse_args()
     
     input_file = args.input_file
@@ -178,8 +140,8 @@ if __name__ == '__main__':
 
     output_filename = Path(input_file).stem
 
-    output_file = output_folder / f"{output_filename}_ma{args.ma_periods}_ws{args.window_size}_set1.h5"
-    output_scaler_file = output_folder / f"{output_filename}_ma{args.ma_periods}_ws{args.window_size}_set1.json"
+    output_file = output_folder / f"{output_filename}_ma{args.ma_periods}_ws{args.window_size}_{args.set_name}.h5"
+    output_scaler_file = output_folder / f"{output_filename}_ma{args.ma_periods}_ws{args.window_size}_{args.set_name}.json"
 
     if os.path.exists(output_file):
         os.remove(output_file)
@@ -188,8 +150,6 @@ if __name__ == '__main__':
         os.remove(output_scaler_file)
 
     x_shape, y_shape = 0, 0
-
-    # X_all, y_all = None, None
 
     with Progress() as progress:
         with zipfile.ZipFile(args.input_file, 'r') as origin:
@@ -204,12 +164,12 @@ if __name__ == '__main__':
                     dataset = pd.read_csv(f, usecols=['timestamp', 'high', 'low'], index_col=['timestamp'], parse_dates=['timestamp'])
 
                     dataset = dataset[dataset.index < '2024-01-01']
-                    #dataset = dataset[dataset.index >= '2023-01-01']
-                    dataset = dataset[dataset.index >= '2009-05-01']
+                    dataset = dataset[dataset.index >= '2023-01-01']
+                    #dataset = dataset[dataset.index >= '2009-05-01']
 
                     dataset['hl_avg'] = dataset['high'] + dataset['low'] / 2
                     dataset['ma'] = dataset['hl_avg'].rolling(window=args.ma_periods).mean()
-                    dataset, columns, indicator_len = prepare_indicator_set1(dataset)
+                    dataset, columns, indicator_len = prepare_indicator_sets(dataset, args.set_name)
 
                     del dataset['high']
                     del dataset['low']
@@ -226,25 +186,11 @@ if __name__ == '__main__':
 
                     X, y = get_data(dataset[columns + ['log_returns']].values, dataset['log_returns'].values, args.window_size)
 
-                    # if X_all is None:
-                    #     X_all = X
-                    #     y_all = y
-                    # else:
-                    #     X_all = np.append(X_all, X, axis=0)
-                    #     y_all = np.append(y_all, y, axis=0)
-
-                    # x_shape = X_all.shape[0]
-                    # y_shape = y_all.shape[0]
-
                     x_shape, y_shape = add_to_dataset(output_file, X, y)
                     progress.update(task, advance=1)
             
             progress.update(task, completed=True)
             progress.remove_task(task)
-
-        # if (np.isnan(X_all).any() or np.isnan(y_all).any()):
-        #     print("[red]Nan values found")
-        #     exit(1)
 
         task = progress.add_task("[green]Split train/val and normailze[/green]", total=None)
         split_and_normalize_data(output_file, output_scaler_file, 0.8)
