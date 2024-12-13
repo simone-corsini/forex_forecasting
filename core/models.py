@@ -5,7 +5,7 @@ class ForexForecasting(nn.Module):
     def __init__(self, features, **kwargs):
         super(ForexForecasting, self).__init__()
 
-        lstm_hidden_size = kwargs.get('lmst_hidden_size', 76)
+        lstm_hidden_size = kwargs.get('lmst_hidden_size', 64)
         num_layers = kwargs.get('num_layers', 1)
         dropout = kwargs.get('dropout', 0.2)
 
@@ -27,7 +27,7 @@ class ForexForecastingSeq2Seq(nn.Module):
     def __init__(self, features, **kwargs):
         super(ForexForecastingSeq2Seq, self).__init__()
 
-        lstm_hidden_size = kwargs.get('lmst_hidden_size', 76)
+        lstm_hidden_size = kwargs.get('lmst_hidden_size', 64)
         num_layers = kwargs.get('num_layers', 1)
         dropout = kwargs.get('dropout', 0.2)
         self.output_len = kwargs['output_len']
