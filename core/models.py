@@ -6,11 +6,12 @@ class ForexForecasting(nn.Module):
         super(ForexForecasting, self).__init__()
 
         lstm_hidden_size = kwargs.get('lmst_hidden_size', 76)
+        num_layers = kwargs.get('num_layers', 1)
         dropout = kwargs.get('dropout', 0.2)
 
-        self.name = f'ForexForecasting_{lstm_hidden_size}_{dropout}'
+        self.name = f'ForexForecasting_h{lstm_hidden_size}_l{num_layers}_d{dropout}'
 
-        self.lstm = nn.LSTM(features, lstm_hidden_size, batch_first=True, bidirectional=False)
+        self.lstm = nn.LSTM(features, lstm_hidden_size, num_layers, batch_first=True, bidirectional=False)
         self.dropout = nn.Dropout(dropout)
         self.output = nn.Linear(lstm_hidden_size, 1)
 
@@ -27,13 +28,14 @@ class ForexForecastingSeq2Seq(nn.Module):
         super(ForexForecastingSeq2Seq, self).__init__()
 
         lstm_hidden_size = kwargs.get('lmst_hidden_size', 76)
+        num_layers = kwargs.get('num_layers', 1)
         dropout = kwargs.get('dropout', 0.2)
         self.output_len = kwargs['output_len']
 
-        self.name = f'ForexForecastingSeq2Seq_{lstm_hidden_size}_{dropout}_{self.output_len}'
+        self.name = f'ForexForecastingSeq2Seq_h{lstm_hidden_size}_l{num_layers}_{dropout}_{self.output_len}'
 
-        self.encoder = nn.LSTM(features, lstm_hidden_size, batch_first=True, bidirectional=False)
-        self.decoder = nn.LSTM(1, lstm_hidden_size, batch_first=True, bidirectional=False)
+        self.encoder = nn.LSTM(features, lstm_hidden_size, num_layers, batch_first=True, bidirectional=False)
+        self.decoder = nn.LSTM(1, lstm_hidden_size, num_layers, batch_first=True, bidirectional=False)
         self.dropout = nn.Dropout(dropout)
         self.output = nn.Linear(lstm_hidden_size, 1)
 
