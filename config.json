@@ -5,7 +5,7 @@
 		"models": [
 			{
 				"module": "core.models",
-				"class": "ForexForecasting",
+				"class": "ConvLSMTClassifier",
 				"params": {},
 				"train": {
 					"epochs": 1000,
