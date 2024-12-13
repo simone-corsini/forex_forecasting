@@ -1,17 +1,12 @@
 import torch
 from torch.utils.data import DataLoader, random_split
 from torch.utils.tensorboard import SummaryWriter
-from torchmetrics import ConfusionMatrix
-from torchmetrics.classification import MulticlassConfusionMatrix
+from torchmetrics import R2Score
 from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
 from rich.console import Console
 from rich.table import Table
-import matplotlib.pyplot as plt
-import torch.nn.functional as F
-import seaborn as sns
 import os
 import re
-from collections import defaultdict
 
 class EarlyStopping:
     def __init__(self, trainer, patience=5, min_epochs=200, delta=0.00001, checkpoint_path='best_model.pth', smoothing_factor=0.1, verbose=True):
@@ -322,7 +317,6 @@ class Trainer:
 
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
-            outputs =  outputs.view(-1)
             loss = self.criterion(outputs, targets)
 
             loss.backward()
@@ -335,7 +329,10 @@ class Trainer:
 
             # Update metrics
             for metric in self.train_metrics:
-                metric.update(outputs, targets)
+                if isinstance(metric, R2Score):
+                    metric.update(outputs.squeeze(-1), targets.squeeze(-1))
+                else:
+                    metric.update(outputs, targets)
                 value = metric.compute()
                 if torch.is_tensor(value) and value.ndim == 0:
                     self.writer.add_scalar(f'Step/{metric.__class__.__name__}', value, self._total_steps)
@@ -374,14 +371,16 @@ class Trainer:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
 
                 outputs = self.model(inputs)
-                outputs =  outputs.view(-1)
                 loss = self.criterion(outputs, targets)
 
                 running_loss += loss.item() * inputs.size(0)
 
                 # Update metrics
                 for metric in self.val_metrics:
-                    metric.update(outputs, targets)
+                    if isinstance(metric, R2Score):
+                        metric.update(outputs.squeeze(-1), targets.squeeze(-1))
+                    else:
+                        metric.update(outputs, targets)
                 
                 progress.update(val_task, advance=1, description=f"Eval Batch {idx+1}/{steps}")  
         

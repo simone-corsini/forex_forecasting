@@ -6,7 +6,6 @@ import argparse
 import os
 import json
 
-
 from rich.progress import Progress
 from rich import print
 from pathlib import Path
@@ -15,7 +14,6 @@ from sets.prepare_sets import prepare_indicator_sets
 
 epsilon = 1e-10
 
-
 def default_serializer(obj):
     if isinstance(obj, np.float32):
         return float(obj)
@@ -23,14 +21,14 @@ def default_serializer(obj):
         return obj.tolist()
     raise TypeError(f"Type {type(obj)} not serializable")
 
-def get_data(X_values, y_values, window_size):
+def get_data(X_values, y_values, window_size, future_size):
     X, y = [], []
     len_values = len(X_values)
-    for i in range(window_size, len_values):
+    for i in range(window_size, len_values - future_size + 1):
         X.append(X_values[i-window_size:i])
-        y.append(y_values[i])
+        y.append(y_values[i:i+future_size] if future_size > 1 else y_values[i])
 
-    return np.asarray(X), np.asarray(y)
+    return np.asarray(X), np.expand_dims(np.asarray(y), axis=-1)
 
 def add_to_dataset(output_file, X, y):
     with h5py.File(output_file, 'a') as f:
@@ -47,13 +45,13 @@ def add_to_dataset(output_file, X, y):
             dset_y = f['y']
             original_size_y = dset_y.shape[0]
             new_size_y = original_size_y + y.shape[0]
-            dset_y.resize((new_size_y,))
-            dset_y[original_size_y:new_size_y]  = y.astype(np.float32)
+            dset_y.resize((new_size_y,) + y.shape[1:])
+            dset_y[original_size_y:new_size_y, ...] = y.astype(np.float32)
         else:
-            f.create_dataset('y', data=y, maxshape=(None,), compression='gzip', compression_opts=9)
+            f.create_dataset('y', data=y, maxshape=(None,) + (y.shape[1:] if len(y.shape) > 1 else ()), compression='gzip', compression_opts=9)
 
         return f['X'].shape[0], f['y'].shape[0]
-    
+
 def split_and_normalize_data(output_file, output_scaler_file, train_size):
     with h5py.File(output_file, 'a') as f:
         X_all = f['X'][:]
@@ -75,7 +73,7 @@ def split_and_normalize_data(output_file, output_scaler_file, train_size):
         print(f"[green]Max X values: {max_X_values}")
         print(f"[green]Min y values: {min_y_values}")
         print(f"[green]Max y values: {max_y_values}")
-        
+
         data = {
             'min_X_values': min_X_values,
             'max_X_values': max_X_values,
@@ -98,7 +96,6 @@ def split_and_normalize_data(output_file, output_scaler_file, train_size):
         X_val = X_val.astype(np.float32)
         y_val = y_val.astype(np.float32)
 
-        # Crea i dataset
         f.create_dataset('X_train', data=X_train, dtype='float32', compression='gzip', compression_opts=9)
         f.create_dataset('y_train', data=y_train, dtype='float32', compression='gzip', compression_opts=9)
         f.create_dataset('X_val', data=X_val, dtype='float32', compression='gzip', compression_opts=9)
@@ -114,10 +111,10 @@ def split_and_normalize_data(output_file, output_scaler_file, train_size):
         del f['X']
         del f['y']
 
-        print(f"[green]X Train size: {f["X_train"].shape}")
-        print(f"[green]y Train size: {f["y_train"].shape}")
-        print(f"[green]X Val size: {f["X_val"].shape}")
-        print(f"[green]y Val size: {f["y_val"].shape}")
+        print(f"[green]X Train size: {f['X_train'].shape}")
+        print(f"[green]y Train size: {f['y_train'].shape}")
+        print(f"[green]X Val size: {f['X_val'].shape}")
+        print(f"[green]y Val size: {f['y_val'].shape}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Processa un file di input per generare un file HDF5.")
@@ -130,9 +127,9 @@ if __name__ == '__main__':
     parser.add_argument('--output_folder', type=str, help="Cartella di output")
     parser.add_argument('--ma_periods', type=int, default=14, help="Numero di periodi per la media mobile dei Log Returns")
     parser.add_argument('--window_size', type=int, default=256, help="Dimensione della finestra di osservazione")
-    parser.add_argument('--future_size', type=int, default=1, help="Dimensione della finestra di osservazione")
+    parser.add_argument('--future_size', type=int, default=1, help="Dimensione della finestra di osservazione futura")
     args = parser.parse_args()
-    
+
     input_file = args.input_file
     output_folder = args.output_folder
     if output_folder is None:
@@ -140,8 +137,8 @@ if __name__ == '__main__':
 
     output_filename = Path(input_file).stem
 
-    output_file = output_folder / f"{output_filename}_ma{args.ma_periods}_ws{args.window_size}_{args.set_name}.h5"
-    output_scaler_file = output_folder / f"{output_filename}_ma{args.ma_periods}_ws{args.window_size}_{args.set_name}.json"
+    output_file = output_folder / f"{output_filename}_ma{args.ma_periods}_ws{args.window_size}_f{args.future_size}_{args.set_name}.h5"
+    output_scaler_file = output_folder / f"{output_filename}_ma{args.ma_periods}_ws{args.window_size}_f{args.future_size}_{args.set_name}.json"
 
     if os.path.exists(output_file):
         os.remove(output_file)
@@ -164,8 +161,8 @@ if __name__ == '__main__':
                     dataset = pd.read_csv(f, usecols=['timestamp', 'high', 'low'], index_col=['timestamp'], parse_dates=['timestamp'])
 
                     dataset = dataset[dataset.index < '2024-01-01']
-                    dataset = dataset[dataset.index >= '2023-01-01']
-                    #dataset = dataset[dataset.index >= '2009-05-01']
+                    #dataset = dataset[dataset.index >= '2023-01-01']
+                    dataset = dataset[dataset.index >= '2009-05-01']
 
                     dataset['hl_avg'] = dataset['high'] + dataset['low'] / 2
                     dataset['ma'] = dataset['hl_avg'].rolling(window=args.ma_periods).mean()
@@ -184,16 +181,15 @@ if __name__ == '__main__':
                         progress.update(task, advance=1)
                         continue
 
-                    X, y = get_data(dataset[columns + ['log_returns']].values, dataset['log_returns'].values, args.window_size)
+                    X, y = get_data(dataset[columns + ['log_returns']].values, dataset['log_returns'].values, args.window_size, args.future_size)
 
                     x_shape, y_shape = add_to_dataset(output_file, X, y)
                     progress.update(task, advance=1)
-            
+
             progress.update(task, completed=True)
             progress.remove_task(task)
 
-        task = progress.add_task("[green]Split train/val and normailze[/green]", total=None)
+        task = progress.add_task("[green]Split train/val and normalize[/green]", total=None)
         split_and_normalize_data(output_file, output_scaler_file, 0.8)
         progress.update(task, completed=True)
         progress.remove_task(task)
-

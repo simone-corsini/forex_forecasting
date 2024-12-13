@@ -1,12 +1,14 @@
 [
 	{
-		"dataset": "data/eurusd_m5_splitted_ma14_ws256_set1.h5",
+		"dataset": "data/eurusd_m5_ma14_ws256_f6_set1.h5",
 		"n_classes": 3,
 		"models": [
 			{
 				"module": "core.models",
-				"class": "ConvLSMTClassifier",
-				"params": {},
+				"class": "ForexForecastingSeq2Seq",
+				"params": {
+					"output_len": 6
+				},
 				"train": {
 					"epochs": 1000,
 					"min_epochs": 10,
