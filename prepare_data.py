@@ -164,8 +164,8 @@ if __name__ == '__main__':
                     dataset = pd.read_csv(f, usecols=['timestamp', 'high', 'low'], index_col=['timestamp'], parse_dates=['timestamp'])
 
                     dataset = dataset[dataset.index < '2024-01-01']
-                    dataset = dataset[dataset.index >= '2023-01-01']
-                    #dataset = dataset[dataset.index >= '2009-05-01']
+                    #dataset = dataset[dataset.index >= '2023-01-01']
+                    dataset = dataset[dataset.index >= '2009-05-01']
 
                     dataset['hl_avg'] = dataset['high'] + dataset['low'] / 2
                     dataset['ma'] = dataset['hl_avg'].rolling(window=args.ma_periods).mean()
