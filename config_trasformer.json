@@ -17,7 +17,7 @@
 				"train": {
 					"epochs": 1000,
 					"min_epochs": 10,
-					"batch_size": 2048,
+					"batch_size": 1024,
 					"patience": 15,
 					"reduce_lr": 5,
 					"warmup_lr": 5,
@@ -41,7 +41,7 @@
 				"train": {
 					"epochs": 1000,
 					"min_epochs": 10,
-					"batch_size": 2048,
+					"batch_size": 1024,
 					"patience": 15,
 					"reduce_lr": 5,
 					"warmup_lr": 5,
@@ -65,7 +65,7 @@
 				"train": {
 					"epochs": 1000,
 					"min_epochs": 10,
-					"batch_size": 2048,
+					"batch_size": 1024,
 					"patience": 15,
 					"reduce_lr": 5,
 					"warmup_lr": 5,
@@ -89,7 +89,7 @@
 				"train": {
 					"epochs": 1000,
 					"min_epochs": 10,
-					"batch_size": 2048,
+					"batch_size": 1024,
 					"patience": 15,
 					"reduce_lr": 5,
 					"warmup_lr": 5,
@@ -113,7 +113,7 @@
 				"train": {
 					"epochs": 1000,
 					"min_epochs": 10,
-					"batch_size": 2048,
+					"batch_size": 1024,
 					"patience": 15,
 					"reduce_lr": 5,
 					"warmup_lr": 5,
@@ -137,7 +137,7 @@
 				"train": {
 					"epochs": 1000,
 					"min_epochs": 10,
-					"batch_size": 2048,
+					"batch_size": 1024,
 					"patience": 15,
 					"reduce_lr": 5,
 					"warmup_lr": 5,
