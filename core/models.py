@@ -55,3 +55,32 @@ class ForexForecastingSeq2Seq(nn.Module):
         
         return outputs
     
+class TransformerModel(nn.Module):
+    def __init__(self, features, **kwargs):
+        super(TransformerModel, self).__init__()
+        
+        d_model = kwargs.get('d_model', 64)
+        nhead = kwargs.get('nhead', 4)
+        num_encoder_layers = kwargs.get('num_encoder_layers', 3)
+        output_dim = kwargs.get('output_dim', 1)
+
+        self.output_len = kwargs['output_len']
+
+        self.input_projection = nn.Linear(features, d_model)
+        self.positional_encoding = nn.Parameter(torch.zeros(1, features, d_model))
+        encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead)
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
+        
+        self.output_projection = nn.Linear(d_model, output_dim)
+    
+    def forward(self, x):
+        batch_size, seq_len = x.shape
+        
+        x = self.input_projection(x.unsqueeze(-1))
+        x = x + self.positional_encoding[:, :seq_len, :]
+        x = x.permute(1, 0, 2)
+        x = self.transformer_encoder(x) 
+        x = self.output_projection(x.permute(1, 0, 2))
+        x = x[:, -self.output_len:, :]
+        
+        return x

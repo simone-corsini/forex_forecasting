@@ -1,0 +1,25 @@
+[
+	{
+		"dataset": "data/eurusd_m5_ma14_ws256_f6_set1.h5",
+		"models": [
+			{
+				"module": "core.models",
+				"class": "ForexForecastingSeq2Seq",
+				"params": {
+					"output_len": 6
+				},
+				"train": {
+					"epochs": 1,
+					"min_epochs": 10,
+					"batch_size": 2048,
+					"patience": 15,
+					"reduce_lr": 5,
+					"warmup_lr": 5,
+					"lr": 0.0001,
+					"max_lr": 0.0006,
+					"min_lr": 0.00001
+				}
+			}
+		]
+	}
+]
