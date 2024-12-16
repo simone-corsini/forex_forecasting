@@ -8,6 +8,12 @@ class HDF5Dataset(Dataset):
             X_set = f[f'X_{set_type}']
             y_set = f[f'y_{set_type}']
 
+            self.features = []
+
+            if 'X_train' in f:
+                if 'features' in f['X_train'].attrs:
+                    self.features = f['X_train'].attrs['features']
+
             self.x_features = X_set.shape[-1]
             self.data_len = X_set.shape[0]
             self.samples = self.data_len

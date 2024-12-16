@@ -94,6 +94,7 @@ def main():
 
             checkpoint_path = os.path.join(args.model_path, trainer_name, 'best_model.pth')
             final_path = os.path.join(args.model_path, trainer_name, 'final_model.pth')
+            model_path = os.path.join(args.model_path, trainer_name, 'model.pth')
 
 
             train_settings = configuration.get('train', {})
@@ -168,6 +169,7 @@ def main():
                 max_lr=max_lr,
                 checkpoint_path=checkpoint_path,
                 final_model_path=final_path,
+                model_path=model_path,
                 log_dir=args.log_dir,
                 name=trainer_name,
                 verbose=args.verbose

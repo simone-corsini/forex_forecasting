@@ -52,7 +52,7 @@ def add_to_dataset(output_file, X, y):
 
         return f['X'].shape[0], f['y'].shape[0]
 
-def split_and_normalize_data(output_file, output_scaler_file, train_size):
+def split_and_normalize_data(output_file, output_scaler_file, train_size, fearures):
     with h5py.File(output_file, 'a') as f:
         X_all = f['X'][:]
         y_all = f['y'][:]
@@ -73,6 +73,7 @@ def split_and_normalize_data(output_file, output_scaler_file, train_size):
         print(f"[green]Max X values: {max_X_values}")
         print(f"[green]Min y values: {min_y_values}")
         print(f"[green]Max y values: {max_y_values}")
+        print(f"[green]Features: {fearures}")
 
         data = {
             'min_X_values': min_X_values,
@@ -80,7 +81,8 @@ def split_and_normalize_data(output_file, output_scaler_file, train_size):
             'min_y_values': min_y_values,
             'max_y_values': max_y_values,
             'normalize_min': normalize_min,
-            'normalize_max': normalize_max
+            'normalize_max': normalize_max,
+            'features': fearures
         }
 
         with open(output_scaler_file, 'w') as file_scaler:
@@ -107,6 +109,7 @@ def split_and_normalize_data(output_file, output_scaler_file, train_size):
         f['X_train'].attrs['max_y'] = max_y_values
         f['X_train'].attrs['normalize_min'] = normalize_min
         f['X_train'].attrs['normalize_max'] = normalize_max
+        f['X_train'].attrs['features'] = fearures
 
         del f['X']
         del f['y']
@@ -161,8 +164,8 @@ if __name__ == '__main__':
                     dataset = pd.read_csv(f, usecols=['timestamp', 'high', 'low'], index_col=['timestamp'], parse_dates=['timestamp'])
 
                     dataset = dataset[dataset.index < '2024-01-01']
-                    #dataset = dataset[dataset.index >= '2023-01-01']
-                    dataset = dataset[dataset.index >= '2009-05-01']
+                    dataset = dataset[dataset.index >= '2023-01-01']
+                    #dataset = dataset[dataset.index >= '2009-05-01']
 
                     dataset['hl_avg'] = dataset['high'] + dataset['low'] / 2
                     dataset['ma'] = dataset['hl_avg'].rolling(window=args.ma_periods).mean()
@@ -190,6 +193,6 @@ if __name__ == '__main__':
             progress.remove_task(task)
 
         task = progress.add_task("[green]Split train/val and normalize[/green]", total=None)
-        split_and_normalize_data(output_file, output_scaler_file, 0.8)
+        split_and_normalize_data(output_file, output_scaler_file, 0.8, columns + ['log_returns'])
         progress.update(task, completed=True)
         progress.remove_task(task)

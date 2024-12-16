@@ -141,6 +141,7 @@ class Trainer:
                  lr_factor_down=0.8, lr_factor_up=1.2, patience_lr_down=5, patience_lr_up=10, min_lr=1e-6, max_lr=1e-2,
                  checkpoint_path='best_model.pth',
                  final_model_path='final_model.pth',
+                 model_path='model.pth',
                  log_dir='runs',
                  name='trainer',
                  verbose=True):
@@ -186,6 +187,7 @@ class Trainer:
         # Early Stopping
         self.early_stopping = EarlyStopping(self, patience=es_patience, delta=es_delta, checkpoint_path=checkpoint_path, min_epochs=min_epochs, verbose=self.verbose)
         self.final_model_path = final_model_path
+        self.model_path = model_path
 
         # Dynamic LR
         self.dynamic_lr = DynamicLR(self.optimizer, 
@@ -481,5 +483,7 @@ class Trainer:
 
         # Save the final model
         self.save_model(self.final_model_path)
+
+        torch.save(self.model, self.model_path)
 
         self.writer.close()

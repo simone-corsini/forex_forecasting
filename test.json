@@ -4,14 +4,15 @@
 		"models": [
 			{
 				"module": "core.models",
-				"class": "ForexForecastingSeq2Seq",
+				"class": "TransformerModel",
 				"params": {
+					"seq_len": 256,
 					"output_len": 6
 				},
 				"train": {
 					"epochs": 1,
 					"min_epochs": 10,
-					"batch_size": 2048,
+					"batch_size": 128,
 					"patience": 15,
 					"reduce_lr": 5,
 					"warmup_lr": 5,

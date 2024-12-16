@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+import math
+
 class ForexForecasting(nn.Module):
     def __init__(self, features, **kwargs):
         super(ForexForecasting, self).__init__()
@@ -54,7 +56,23 @@ class ForexForecastingSeq2Seq(nn.Module):
         outputs = torch.cat(outputs, dim=1)
         
         return outputs
-    
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, max_len=5000):
+        super(PositionalEncoding, self).__init__()
+        
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        return x + self.pe[:, :x.size(1), :]
+
 class TransformerModel(nn.Module):
     def __init__(self, features, **kwargs):
         super(TransformerModel, self).__init__()
@@ -62,25 +80,26 @@ class TransformerModel(nn.Module):
         d_model = kwargs.get('d_model', 64)
         nhead = kwargs.get('nhead', 4)
         num_encoder_layers = kwargs.get('num_encoder_layers', 3)
+        dropout = kwargs.get('dropout', 0.3)
         output_dim = kwargs.get('output_dim', 1)
 
+        self.seq_len = kwargs['seq_len']
         self.output_len = kwargs['output_len']
 
+        self.name = f'TransformerModel_dm{d_model}_nh{nhead}_nel{num_encoder_layers}_d{dropout}'
+
         self.input_projection = nn.Linear(features, d_model)
-        self.positional_encoding = nn.Parameter(torch.zeros(1, features, d_model))
-        encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead)
+        self.positional_encoding = PositionalEncoding(d_model, max_len=self.seq_len) # nn.Parameter(torch.zeros(1, self.seq_len, d_model))
+        
+        encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dropout=dropout, batch_first=True)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
         
         self.output_projection = nn.Linear(d_model, output_dim)
     
     def forward(self, x):
-        batch_size, seq_len = x.shape
-        
-        x = self.input_projection(x.unsqueeze(-1))
-        x = x + self.positional_encoding[:, :seq_len, :]
-        x = x.permute(1, 0, 2)
-        x = self.transformer_encoder(x) 
-        x = self.output_projection(x.permute(1, 0, 2))
+        x = self.input_projection(x)
+        x = self.positional_encoding(x)  #x = x + self.positional_encoding[:, :self.seq_len, :]
+        x = self.transformer_encoder(x)
+        x = self.output_projection(x)
         x = x[:, -self.output_len:, :]
-        
-        return x
+        return x.contiguous()
