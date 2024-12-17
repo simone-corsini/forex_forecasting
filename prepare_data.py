@@ -137,6 +137,7 @@ if __name__ == '__main__':
     parser.add_argument('--ma_periods', type=int, default=14, help="Numero di periodi per la media mobile dei Log Returns")
     parser.add_argument('--window_size', type=int, default=256, help="Dimensione della finestra di osservazione")
     parser.add_argument('--future_size', type=int, default=1, help="Dimensione della finestra di osservazione futura")
+    parser.add_argument('--is_test', action='store_true', help="Se impostato, il file di output sarà un file di test")
     args = parser.parse_args()
 
     input_file = args.input_file
@@ -170,8 +171,10 @@ if __name__ == '__main__':
                     dataset = pd.read_csv(f, usecols=['timestamp', 'high', 'low'], index_col=['timestamp'], parse_dates=['timestamp'])
 
                     dataset = dataset[dataset.index < '2024-01-01']
-                    #dataset = dataset[dataset.index >= '2023-01-01']
-                    dataset = dataset[dataset.index >= '2009-05-01']
+                    if args.is_test:
+                        dataset = dataset[dataset.index >= '2023-01-01']
+                    else:
+                        dataset = dataset[dataset.index >= '2009-05-01']
 
                     dataset['hl_avg'] = dataset['high'] + dataset['low'] / 2
                     dataset['ma'] = dataset['hl_avg'].rolling(window=args.ma_periods).mean()
