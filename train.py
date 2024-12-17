@@ -87,7 +87,15 @@ def main():
                 print(f"[bold red]Invalid model:[/bold red] {module_name}.{class_name}")
                 continue
 
-            model = model_class(train_dataset.x_features, **kwargs)
+            features = train_dataset.x_features
+            seq_len = train_dataset.x_len
+            output_len = train_dataset.y_len
+
+            print(f"[bold green]Input data len:[/bold green] {features}")
+            print(f"[bold green]Input data features:[/bold green] {seq_len}")
+            print(f"[bold green]Output data len:[/bold green] {output_len}")
+
+            model = model_class(features, seq_len, output_len, **kwargs)
             trainer_name = f'{model.name}_{file_name}'
 
             print(f"[bold green]Model name:[/bold green] {trainer_name}")

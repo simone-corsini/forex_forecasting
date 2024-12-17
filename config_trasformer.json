@@ -1,6 +1,6 @@
 [
 	{
-		"dataset": "data/eurusd_m5_ma14_ws256_f6_set1.h5",
+		"dataset": "data/eurusd_m5_ma14_ws240_f12_set1.h5",
 		"models": [
 			{
 				"module": "core.models",
@@ -8,11 +8,8 @@
 				"params": {
 					"d_model": 32,
 					"nhead": 4,
-					"num_encoder_layers": 1,
-					"dropout": 0.3,
-					"output_dim": 1,
-					"seq_len": 256,
-					"output_len": 6
+					"num_encoder_layers": 2,
+					"dropout": 0.3
 				},
 				"train": {
 					"epochs": 1000,

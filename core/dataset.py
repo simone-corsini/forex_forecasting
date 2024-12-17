@@ -15,6 +15,8 @@ class HDF5Dataset(Dataset):
                     self.features = f['X_train'].attrs['features']
 
             self.x_features = X_set.shape[-1]
+            self.x_len = X_set.shape[1]
+            self.y_len = y_set.shape[1]
             self.data_len = X_set.shape[0]
             self.samples = self.data_len
 

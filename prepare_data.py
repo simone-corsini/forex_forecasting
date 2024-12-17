@@ -28,7 +28,13 @@ def get_data(X_values, y_values, window_size, future_size):
         X.append(X_values[i-window_size:i])
         y.append(y_values[i:i+future_size] if future_size > 1 else y_values[i])
 
-    return np.asarray(X), np.expand_dims(np.asarray(y), axis=-1)
+    out_X = np.asarray(X)
+    out_y = np.expand_dims(np.asarray(y), axis=-1)
+
+    assert out_X.shape[1:] == (window_size, len(X_values[0]))
+    assert out_y.shape[1:] == (future_size, 1)
+
+    return out_X, out_y
 
 def add_to_dataset(output_file, X, y):
     with h5py.File(output_file, 'a') as f:
@@ -180,7 +186,7 @@ if __name__ == '__main__':
 
                     dataset = dataset[args.ma_periods + indicator_len:]
 
-                    if dataset.shape[0] <= args.window_size:
+                    if dataset.shape[0] <= args.window_size + args.future_size:
                         progress.update(task, advance=1)
                         continue
 

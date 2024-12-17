@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 import math
 
 class ForexForecasting(nn.Module):
-    def __init__(self, features, **kwargs):
+    def __init__(self, features, seq_len, output_len, **kwargs):
         super(ForexForecasting, self).__init__()
 
         lstm_hidden_size = kwargs.get('lmst_hidden_size', 64)
@@ -26,7 +27,7 @@ class ForexForecasting(nn.Module):
         return x
     
 class ForexForecastingSeq2Seq(nn.Module):
-    def __init__(self, features, **kwargs):
+    def __init__(self, features, seq_len, output_len, **kwargs):
         super(ForexForecastingSeq2Seq, self).__init__()
 
         lstm_hidden_size = kwargs.get('lmst_hidden_size', 64)
@@ -73,33 +74,54 @@ class PositionalEncoding(nn.Module):
     def forward(self, x):
         return x + self.pe[:, :x.size(1), :]
 
-class TransformerModel(nn.Module):
-    def __init__(self, features, **kwargs):
-        super(TransformerModel, self).__init__()
+class ForexForecastingTransformer(nn.Module):
+    def __init__(self, features, seq_len, output_len, **kwargs):
+        super(ForexForecastingTransformer, self).__init__()
         
-        d_model = kwargs.get('d_model', 64)
+        d_model = kwargs.get('d_model', 32)
         nhead = kwargs.get('nhead', 4)
-        num_encoder_layers = kwargs.get('num_encoder_layers', 3)
+        ff_dim = kwargs.get('ff_dim', None)
+
+        if ff_dim is None:
+            ff_dim = d_model * 4
+            
+        num_encoder_layers = kwargs.get('num_encoder_layers', 2)
         dropout = kwargs.get('dropout', 0.3)
-        output_dim = kwargs.get('output_dim', 1)
 
-        self.seq_len = kwargs['seq_len']
-        self.output_len = kwargs['output_len']
+        stride = seq_len // output_len
+        kernel = stride + 1
+        padding = ((seq_len - kernel) // stride) + 1
 
-        self.name = f'TransformerModel_dm{d_model}_nh{nhead}_nel{num_encoder_layers}_d{dropout}'
+        self.use_only_conv_padding = True
+        conv_padding = 0
+        if padding % 2 == 0:
+            conv_padding = padding // 2
+        else:
+            self.use_only_conv_padding = False
+            conv_padding = padding // 2 - 1
+
+        #print(f'Stride: {stride}, Kernel: {kernel}, Conv Padding: {conv_padding}, Use Only Conv Padding: {self.use_only_conv_padding}')
+
+        self.name = f'ForexForecastingTransformer_m{d_model}_h{nhead}_l{num_encoder_layers}_f{ff_dim}_d{dropout}_k{kernel}_s{stride}_p{padding}'
 
         self.input_projection = nn.Linear(features, d_model)
-        self.positional_encoding = PositionalEncoding(d_model, max_len=self.seq_len) # nn.Parameter(torch.zeros(1, self.seq_len, d_model))
+        self.positional_encoding = PositionalEncoding(d_model, max_len=seq_len)
         
-        encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dropout=dropout, batch_first=True)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=ff_dim, dropout=dropout, batch_first=True)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
+        self.downsample = nn.Conv1d(in_channels=d_model, out_channels=d_model, kernel_size=kernel, stride=stride, padding=conv_padding)
         
-        self.output_projection = nn.Linear(d_model, output_dim)
+        self.output_projection = nn.Linear(d_model, 1)
     
     def forward(self, x):
         x = self.input_projection(x)
-        x = self.positional_encoding(x)  #x = x + self.positional_encoding[:, :self.seq_len, :]
+        x = self.positional_encoding(x)
         x = self.transformer_encoder(x)
+        x = x.permute(0, 2, 1)
+        if not self.use_only_conv_padding:
+            x = F.pad(x, (0, 1))
+        x = self.downsample(x)
+        x = x.permute(0, 2, 1)
         x = self.output_projection(x)
-        x = x[:, -self.output_len:, :]
+        
         return x.contiguous()
