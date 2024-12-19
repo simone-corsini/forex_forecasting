@@ -54,9 +54,61 @@
 				"class": "ForexForecastingTransformer",
 				"params": {
 					"d_model": 32,
+					"nhead": 8,
+					"num_encoder_layers": 2,
+					"dropout": 0.3,
+					"ff_final": [
+						32,
+						16,
+						8
+					]
+				},
+				"train": {
+					"epochs": 1000,
+					"min_epochs": 10,
+					"batch_size": 128,
+					"patience": 15,
+					"reduce_lr": 5,
+					"warmup_lr": 5,
+					"lr": 0.0001,
+					"max_lr": 0.0006,
+					"min_lr": 0.00001
+				}
+			},
+			{
+				"module": "core.models",
+				"class": "ForexForecastingTransformer",
+				"params": {
+					"d_model": 32,
 					"nhead": 16,
 					"num_encoder_layers": 2,
 					"dropout": 0.3
+				},
+				"train": {
+					"epochs": 1000,
+					"min_epochs": 10,
+					"batch_size": 128,
+					"patience": 15,
+					"reduce_lr": 5,
+					"warmup_lr": 5,
+					"lr": 0.0001,
+					"max_lr": 0.0006,
+					"min_lr": 0.00001
+				}
+			},
+			{
+				"module": "core.models",
+				"class": "ForexForecastingTransformer",
+				"params": {
+					"d_model": 32,
+					"nhead": 16,
+					"num_encoder_layers": 2,
+					"dropout": 0.3,
+					"ff_final": [
+						32,
+						16,
+						8
+					]
 				},
 				"train": {
 					"epochs": 1000,
