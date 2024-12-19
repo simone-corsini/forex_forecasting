@@ -89,7 +89,6 @@ class ForexForecastingTransformer(nn.Module):
         dropout = kwargs.get('dropout', 0.3)
 
         ff_final = kwargs.get('ff_final', [])
-        ff_final_dropout = kwargs.get('ff_final_dropout', 0.3)
 
         stride = seq_len // output_len
         kernel = stride + 1
@@ -107,7 +106,7 @@ class ForexForecastingTransformer(nn.Module):
 
         if len(ff_final) > 0:
             str_ff_final = '_'.join(map(str, ff_final)) 
-            self.name += f'_ff{str_ff_final}_ffd{ff_final_dropout}'
+            self.name += f'_ff{str_ff_final}'
 
         self.input_projection = nn.Linear(features, d_model)
         self.positional_encoding = PositionalEncoding(d_model, max_len=seq_len)
@@ -123,8 +122,7 @@ class ForexForecastingTransformer(nn.Module):
 
             for i, fc_size in enumerate(ff_final):
                 self.output_projection.add_module(f'dense_{i}', nn.Linear(last_size, fc_size))
-                self.output_projection.add_module(f'swish_{i}', nn.SiLU())
-                self.output_projection.add_module(f'dropout_{i}', nn.Dropout(ff_final_dropout))
+                self.output_projection.add_module(f'relu_{i}', nn.ReLU())
                 last_size = fc_size
 
             self.output_projection.add_module('output', nn.Linear(last_size, 1))
