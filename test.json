@@ -6,6 +6,7 @@
 				"module": "core.models",
 				"class": "ForexForecastingTransformer",
 				"params": {
+					"ff_final": [32, 16]
 				},
 				"train": {
 					"epochs": 1,

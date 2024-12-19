@@ -81,12 +81,15 @@ class ForexForecastingTransformer(nn.Module):
         d_model = kwargs.get('d_model', 32)
         nhead = kwargs.get('nhead', 4)
         ff_dim = kwargs.get('ff_dim', None)
-
+        
         if ff_dim is None:
             ff_dim = d_model * 4
             
         num_encoder_layers = kwargs.get('num_encoder_layers', 2)
         dropout = kwargs.get('dropout', 0.3)
+
+        ff_final = kwargs.get('ff_final', [])
+        ff_final_dropout = kwargs.get('ff_final_dropout', 0.3)
 
         stride = seq_len // output_len
         kernel = stride + 1
@@ -100,9 +103,11 @@ class ForexForecastingTransformer(nn.Module):
             self.use_only_conv_padding = False
             conv_padding = padding // 2 - 1
 
-        #print(f'Stride: {stride}, Kernel: {kernel}, Conv Padding: {conv_padding}, Use Only Conv Padding: {self.use_only_conv_padding}')
-
         self.name = f'ForexForecastingTransformer_m{d_model}_h{nhead}_l{num_encoder_layers}_f{ff_dim}_d{dropout}_k{kernel}_s{stride}_p{padding}'
+
+        if len(ff_final) > 0:
+            str_ff_final = '_'.join(map(str, ff_final)) 
+            self.name += f'_ff{str_ff_final}_ffd{ff_final_dropout}'
 
         self.input_projection = nn.Linear(features, d_model)
         self.positional_encoding = PositionalEncoding(d_model, max_len=seq_len)
@@ -111,17 +116,35 @@ class ForexForecastingTransformer(nn.Module):
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
         self.downsample = nn.Conv1d(in_channels=d_model, out_channels=d_model, kernel_size=kernel, stride=stride, padding=conv_padding)
         
-        self.output_projection = nn.Linear(d_model, 1)
+        if len(ff_final) > 0:
+            last_size = d_model
+            
+            self.output_projection = nn.Sequential()
+
+            for i, fc_size in enumerate(ff_final):
+                self.output_projection.add_module(f'dense_{i}', nn.Linear(last_size, fc_size))
+                self.output_projection.add_module(f'swish_{i}', nn.SiLU())
+                self.output_projection.add_module(f'dropout_{i}', nn.Dropout(ff_final_dropout))
+                last_size = fc_size
+
+            self.output_projection.add_module('output', nn.Linear(last_size, 1))
+
+        else:
+            self.output_projection = nn.Linear(d_model, 1)
     
     def forward(self, x):
         x = self.input_projection(x)
         x = self.positional_encoding(x)
         x = self.transformer_encoder(x)
+
         x = x.permute(0, 2, 1)
         if not self.use_only_conv_padding:
             x = F.pad(x, (0, 1))
+        
         x = self.downsample(x)
+        
         x = x.permute(0, 2, 1)
+        
         x = self.output_projection(x)
         
-        return x.contiguous()
+        return x
