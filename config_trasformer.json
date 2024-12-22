@@ -1,6 +1,6 @@
 [
 	{
-		"dataset": "data/eurusd_m5_ma14_w300_f6_set1.h5",
+		"dataset": "data/eurusd_m5_ma14_ws300_f6_set1.h5",
 		"models": [
 			{
 				"module": "core.models",
