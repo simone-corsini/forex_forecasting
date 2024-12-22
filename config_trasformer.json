@@ -1,6 +1,6 @@
 [
 	{
-		"dataset": "data/eurusd_m5_ma6_ws240_f6_set1.h5",
+		"dataset": "data/eurusd_m5_ma14_w300_f6_set1.h5",
 		"models": [
 			{
 				"module": "core.models",
@@ -28,7 +28,7 @@
 				"class": "ForexForecastingTransformer",
 				"params": {
 					"d_model": 32,
-					"nhead": 16,
+					"nhead": 4,
 					"num_encoder_layers": 2,
 					"dropout": 0.3
 				},
