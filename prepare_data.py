@@ -176,7 +176,7 @@ if __name__ == '__main__':
                     else:
                         dataset = dataset[dataset.index >= '2009-05-01']
 
-                    dataset['hl_avg'] = dataset['high'] + dataset['low'] / 2
+                    dataset['hl_avg'] = (dataset['high'] + dataset['low']) / 2
                     dataset['ma'] = dataset['hl_avg'].rolling(window=args.ma_periods).mean()
                     dataset, columns, indicator_len = prepare_indicator_sets(dataset, args.set_name)
 
