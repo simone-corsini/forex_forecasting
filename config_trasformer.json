@@ -1,6 +1,6 @@
 [
 	{
-		"dataset": "data/eurusd_m5_ma14_ws300_f6_set1.h5",
+		"dataset": "data/eurusd_m5_ma14_ws240_f6_set1.h5",
 		"models": [
 			{
 				"module": "core.models",
@@ -22,13 +22,18 @@
 					"max_lr": 0.0006,
 					"min_lr": 0.00001
 				}
-			},
+			}
+		]
+	}
+	{
+		"dataset": "data/eurusd_m5_ma14_ws240_f8_set1.h5",
+		"models": [
 			{
 				"module": "core.models",
 				"class": "ForexForecastingTransformer",
 				"params": {
 					"d_model": 32,
-					"nhead": 4,
+					"nhead": 8,
 					"num_encoder_layers": 2,
 					"dropout": 0.3
 				},
